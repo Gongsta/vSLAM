@@ -30,18 +30,24 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_library(${PROJECT_NAME} SHARED
+    src/calibration.cpp
+    src/calibrationsettings.cpp
     src/camera.cpp
-    src/cornerdetector.cpp
     src/convolution.cpp
+    src/cornerdetector.cpp
     src/edgedetector.cpp
     src/orb.cpp
 )
 
-add_executable(main src/main.cpp)
+add_executable(main src/bin/main.cpp)
+add_executable(run_calibration src/bin/run_calibration.cpp)
+add_executable(view_calibration src/bin/view_calibration.cpp)
 add_executable(benchmark_test benchmarking/corner_benchmark.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 target_link_libraries(main ${PROJECT_NAME})
+target_link_libraries(run_calibration ${PROJECT_NAME})
+target_link_libraries(view_calibration ${PROJECT_NAME})
 target_link_libraries(benchmark_test ${PROJECT_NAME})
 target_link_libraries(benchmark_test benchmark::benchmark)
 

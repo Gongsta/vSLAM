@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<calibration_settings>
+  <!-- Number of inner corners per a item row and column. (square, circle) -->
+  <board_size_width>9</board_size_width>
+  <board_size_height>6</board_size_height>
+  <square_size>0.02</square_size>
+
+  <!-- Number of stereo pairs used for calibration -->
+  <num_stereo_pairs>10</num_stereo_pairs>
+
+
+  <!-- The name of the exporter calibration file. -->
+  <calibration_export_path>"calibrated_params.xml"</calibration_export_path>
+</calibration_settings>
+</opencv_storage>
