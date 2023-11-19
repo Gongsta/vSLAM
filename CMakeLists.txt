@@ -37,6 +37,7 @@ add_library(${PROJECT_NAME} SHARED
     src/camera.cpp
     src/convolution.cpp
     src/cornerdetector.cpp
+    src/disparity.cpp
     src/edgedetector.cpp
     src/orb.cpp
 )
@@ -44,6 +45,7 @@ add_library(${PROJECT_NAME} SHARED
 add_executable(main src/bin/main.cpp)
 add_executable(sanity_check_camera src/bin/sanity_check_camera.cpp)
 add_executable(orb src/bin/run_orb.cpp)
+add_executable(disparity src/bin/run_disparity.cpp)
 add_executable(run_calibration src/bin/run_calibration.cpp)
 add_executable(view_calibration src/bin/view_calibration.cpp)
 add_executable(vpi_demo src/bin/vpi_demo.cpp)
@@ -53,6 +55,7 @@ target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} vpi)
 target_link_libraries(main ${PROJECT_NAME})
 target_link_libraries(vpi_demo ${PROJECT_NAME})
 target_link_libraries(orb ${PROJECT_NAME})
+target_link_libraries(disparity ${PROJECT_NAME})
 target_link_libraries(sanity_check_camera ${PROJECT_NAME})
 target_link_libraries(run_calibration ${PROJECT_NAME})
 target_link_libraries(view_calibration ${PROJECT_NAME})
