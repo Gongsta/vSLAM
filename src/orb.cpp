@@ -1,114 +1,114 @@
 #include "orb.hpp"
 
-#include <array>
-#include <iostream>
-#include <utility>
-#include <vector>
+static cv::Mat DrawKeypoints(cv::Mat img, VPIKeypointF32* kpts, int numKeypoints) {
+  cv::Mat out;
+  img.convertTo(out, CV_8UC1);
+  cv::cvtColor(out, out, cv::COLOR_GRAY2BGR);
 
-#define WIDTH 640
-#define HEIGHT 640
+  if (numKeypoints == 0) {
+    return out;
+  }
 
-// template <typename T>
-// std::vector<T> brensenham(const cv::Mat& img, int row, int col, int radius) {
-//     // Brensenham Circle algorithm on an image, reference:
-//     // https://www.geeksforgeeks.org/mid-point-circle-drawing-algorithm/
-//     vector<T> v;
-//     int P = 1 - radius;
-//     int img_height = img.cols;
-//     int img_width = img.rows;
-//     while (x > y) {
-//         y++;
-//         if (P <= 0) {
-//             P = P + 2*y + 1;
-//         } else {
-//             x--;
-//             P = P + 2 * y - 2 * x + 1;
-//         }
-//     if (x < y) break;
-//     }
-// }
+  // prepare our colormap
+  cv::Mat cmap(1, 256, CV_8UC3);
+  {
+    cv::Mat gray(1, 256, CV_8UC1);
+    for (int i = 0; i < 256; ++i) {
+      gray.at<unsigned char>(0, i) = i;
+    }
+    applyColorMap(gray, cmap, cv::COLORMAP_TURBO);
+  }
 
-// // Can make this optimized with GPU, but premature optimization is the root of all evil.
-// void search() {
-//     for (int i = 0; i < 2 * n; i++) {
-//         if (values[i % n] > pos_thresh) {
-//             contiguous_count++;
-//         } else {
-//             contiguous_count = 0;
-//         }
-//         int curr = positions[i % n];
-//         longest = max(longest, curr);
-//     }
-// }
+  for (int i = 0; i < numKeypoints; ++i) {
+    cv::Vec3b color = cmap.at<cv::Vec3b>(rand() % 255);
+    circle(out, cv::Point(kpts[i].x, kpts[i].y), 3, cv::Scalar(color[0], color[1], color[2]), -1);
+  }
 
-void process(const cv::Mat& img) {
-    // Paper: https://ieeexplore.ieee.org/document/6126544
-    // Steps
-    // 1. Detect ORB features
-    // 2.
-    const int radius = 9;
-    const int threshold = 25;
+  return out;
+}
 
-    double t = (double)cv::getTickCount();
-    cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
+ORB::ORB(cv::Mat cv_img_in, VPIStream stream)
+    : descriptors_one{orb_params.maxFeatures, VPI_BRIEF_DESCRIPTOR_ARRAY_LENGTH, CV_8U},
+      descriptors_two{orb_params.maxFeatures, VPI_BRIEF_DESCRIPTOR_ARRAY_LENGTH, CV_8U},
+      stream{stream}
+       {
+  // Needs an image to know the dimension to allocate
+  CHECK_STATUS(vpiInitORBParams(&orb_params));
 
-    // Automatically runs multithreading
-    // reference: https://stackoverflow.com/questions/4504687/cycle-through-pixels-with-opencv
-    // Metods from this tutorial are too slow
-    // https://docs.opencv.org/4.x/db/da5/tutorial_how_to_scan_images.html
+  // ================
+  // Allocate Memory
+  CHECK_STATUS(vpiImageCreate(cv_img_in.cols, cv_img_in.rows, VPI_IMAGE_FORMAT_U8, 0, &img_gray));
 
-    // TODO: check what DS to use here instead of vectors of points
-    // A corner is a feature in "FAST" speak
-    std::vector<std::pair<int, int>> positive_corners;
-    std::vector<std::pair<int, int>> negative_corners;
+  // Create the output keypoint array
+  CHECK_STATUS(vpiArrayCreate(orb_params.maxFeatures, VPI_ARRAY_TYPE_KEYPOINT_F32,
+                              backend | VPI_BACKEND_CPU, &keypoints));
 
-    img.forEach<uchar>([&img, &radius](uchar& p, const int position[]) -> void {
-        if (position[0] - radius < 0 || position[0] + radius >= HEIGHT ||
-            position[1] - radius < 0 || position[1] + radius >= WIDTH) {
-            return;
-        }
-        // Within
-        std::vector<std::pair<int, int>> positive_bordering_pixels;
-        std::vector<std::pair<int, int>> negative_bordering_pixels;
+  // Create the output descriptors array
+  CHECK_STATUS(vpiArrayCreate(orb_params.maxFeatures, VPI_ARRAY_TYPE_BRIEF_DESCRIPTOR,
+                              backend | VPI_BACKEND_CPU, &descriptors));
 
-        // Check for positive corner
-        int count = 0;
-        int positive_thresh = (int)p + threshold;
+  // Create the payload for ORB Feature Detector algorithm
+  CHECK_STATUS(vpiCreateORBFeatureDetector(backend, 20000, &orb_payload));
 
-        std::array<int, 4> four_corners = {
-            img.ptr<uchar>(position[0] - radius)[position[1]],
-            img.ptr<uchar>(position[0] - radius)[position[1]],
-            img.ptr<uchar>(position[0])[position[1] + radius],
-            img.ptr<uchar>(position[0])[position[1] - radius],
-        };
+  // Create the Gaussian Pyramid for the image
+  CHECK_STATUS(vpiPyramidCreate(cv_img_in.cols, cv_img_in.rows, VPI_IMAGE_FORMAT_U8,
+                                orb_params.pyramidLevels, 0.5, backend, &pyr_input));
+}
 
-        if (positive_thresh <= 255) {
-            // Optimization: Check 4 corner pixels first
-            for (int i = 0; i < 4; i++) {
-                if (four_corners[i] > positive_thresh)
-                    ;
-                positive_bordering_pixels.push_back({position[0], position[1]});
-            }
-            if (positive_bordering_pixels.size() >= 3) {
-                // full check for contiguous values
-                std::vector<int> values;
+ORB::~ORB() {
+  vpiImageDestroy(img_gray);
+  vpiArrayDestroy(keypoints);
+  vpiArrayDestroy(descriptors);
+  vpiPayloadDestroy(orb_payload);
+  // if (create_stream) {
+  //   vpiStreamDestroy(stream);
+  // }
+}
 
-                int longest = 0;
-                int n = values.size();
-                int contiguous_count = 0;
-                return;
-            }
-        }
-        int pos_thresh = (int)p + threshold;
+void ORB::ProcessFrame(cv::Mat& cv_img_in, cv::Mat& cv_img_out) {
+  CHECK_STATUS(vpiImageCreateWrapperOpenCVMat(cv_img_in, 0, &img_in));
 
-        // check for negative corner
-        int neg_thresh = (int)p + threshold;
-        if (neg_thresh >= 0) {
-        }
-    });
+  // ================
+  // Processing stage
 
-    cv::imwrite("bw_img.png", img);
+  // Convert img to grayscale
+  CHECK_STATUS(vpiSubmitConvertImageFormat(stream, backend, img_in, img_gray, NULL));
 
-    t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-    std::cout << " processing took: " << t << "s" << std::endl;
+  // Create the Gaussian Pyramid for the image and wait for the execution
+  CHECK_STATUS(
+      vpiSubmitGaussianPyramidGenerator(stream, backend, img_gray, pyr_input, VPI_BORDER_ZERO));
+
+  // Get ORB features and wait for the execution to finish
+  CHECK_STATUS(vpiSubmitORBFeatureDetector(stream, backend, orb_payload, pyr_input, keypoints,
+                                           descriptors, &orb_params, VPI_BORDER_ZERO));
+
+  CHECK_STATUS(vpiStreamSync(stream));
+
+  // =======================================
+  // Output processing
+
+  // Lock output keypoints and scores to retrieve its data on cpu memory
+  VPIArrayData out_keypoints_data;
+  VPIImageData img_data;
+  CHECK_STATUS(
+      vpiArrayLockData(keypoints, VPI_LOCK_READ, VPI_ARRAY_BUFFER_HOST_AOS,
+      &out_keypoints_data));
+  CHECK_STATUS(
+      vpiImageLockData(img_gray, VPI_LOCK_READ, VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &img_data));
+
+  VPIKeypointF32* outKeypoints = (VPIKeypointF32*)out_keypoints_data.buffer.aos.data;
+
+  printf("%d keypoints found\n", *out_keypoints_data.buffer.aos.sizePointer);
+
+  cv::Mat img;
+  CHECK_STATUS(vpiImageDataExportOpenCVMat(img_data, &img));
+
+  cv_img_out = DrawKeypoints(img, outKeypoints, *out_keypoints_data.buffer.aos.sizePointer);
+
+  // Done handling outputs, don't forget to unlock them.
+  CHECK_STATUS(vpiImageUnlock(img_gray));
+  CHECK_STATUS(vpiArrayUnlock(keypoints));
+
+  // Destroy image to avoid memory leaks
+  vpiImageDestroy(img_in);
 }
