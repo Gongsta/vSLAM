@@ -1,3 +1,11 @@
+/**
+ * @file orb.hpp
+ * @author Steven Gong (gong.steven@hotmail.com)
+ * @brief ORB Feature Detector class
+ * 
+ * @copyright MIT License (c) 2023 Steven Gong
+ * 
+ */
 #ifndef ORB_HPP_
 #define ORB_HPP_
 
@@ -16,8 +24,11 @@
 
 #include "vpi_utils.hpp"
 
-class ORB {
+class ORBFeatureDetector {
  public:
+  VPIStream& stream;
+  uint64_t backends = VPI_BACKEND_CUDA;
+
   // OpenCV
   std::vector<cv::KeyPoint> keypoints_one;
   std::vector<cv::KeyPoint> keypoints_two;
@@ -25,23 +36,20 @@ class ORB {
   cv::Mat descriptors_two;
 
   // VPI
-  VPIImage img_in, img_gray;
-  VPIPyramid pyr_input;
-  VPIArray keypoints, descriptors;
-  VPIPayload orb_payload;
-  VPIStream stream;
-  VPIORBParams orb_params;
-  bool create_stream = false;
-  VPIBackend backend = VPI_BACKEND_CUDA;
-  
+  VPIImage img_in = NULL;
+  VPIImage img_gray = NULL;
+  VPIPyramid pyr_input = NULL;
+  VPIArray keypoints = NULL; 
+  VPIArray descriptors = NULL;
+  VPIPayload orb_payload = NULL;
+
   // ORB Params
+  VPIORBParams orb_params;
   int32_t pyramid_levels;
   float pyramid_scales;
 
-
-
-  ORB(cv::Mat cv_img_in, VPIStream stream);
-  ~ORB();
+  ORBFeatureDetector(cv::Mat& cv_img_in, VPIStream& stream, uint64_t backends);
+  ~ORBFeatureDetector();
   void ProcessFrame(cv::Mat& cv_img_in, cv::Mat& cv_img_out);
 };
 

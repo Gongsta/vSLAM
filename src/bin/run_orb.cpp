@@ -1,37 +1,21 @@
-#include <vpi/Array.h>
-#include <vpi/Image.h>
-#include <vpi/Pyramid.h>
-#include <vpi/Status.h>
-#include <vpi/Stream.h>
-#include <vpi/algo/ConvertImageFormat.h>
-#include <vpi/algo/GaussianPyramid.h>
-#include <vpi/algo/ImageFlip.h>
-#include <vpi/algo/ORB.h>
-
-#include <bitset>
-#include <cstdio>
-#include <cstring>  // for memset
-#include <iostream>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/opencv.hpp>
-#include <sstream>
-#include <vpi/OpenCVInterop.hpp>
+#include "cvimagewrapper.hpp"
+#include "formatconverter.hpp"
 
 #include "orb.hpp"
 #include "vpi_utils.hpp"
 
 int main() {
-  VPIBackend backend = VPI_BACKEND_CUDA;
   cv::VideoCapture cap(0, cv::CAP_V4L2);
   cv::Mat cv_img_in, cv_img_out;
 
+  uint64_t backends = VPI_BACKEND_CUDA;
   try {
     cap.read(cv_img_in);
 
     VPIStream stream;
     CHECK_STATUS(vpiStreamCreate(0, &stream));
-    ORB orb{cv_img_in, stream};
+    ORBFeatureDetector orb{cv_img_in, stream, backends};
+
 
     while (true) {
       cap.read(cv_img_in);
