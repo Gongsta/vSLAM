@@ -20,7 +20,7 @@ int main() {
         continue;
       }
 
-      orb.ProcessFrame(cv_img_in, cv_img_out);
+      orb.Apply(cv_img_in, cv_img_out);
       cv::imshow("Image", cv_img_out);
       if (cv::waitKey(5) >= 0) {
         break;

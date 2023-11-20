@@ -3,6 +3,7 @@
 
 #include <vpi/Status.h>
 
+#include <sstream>
 
 #define CHECK_STATUS(STMT)                              \
   do {                                                  \

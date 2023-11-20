@@ -50,7 +50,14 @@ class ORBFeatureDetector {
 
   ORBFeatureDetector(cv::Mat& cv_img_in, VPIStream& stream, uint64_t backends);
   ~ORBFeatureDetector();
-  void ProcessFrame(cv::Mat& cv_img_in, cv::Mat& cv_img_out);
+  /**
+   * @brief Takes in two regular images and outputs the keypoints and descriptors. Good for quick demo
+   * purposes, but not for actual use.
+   * 
+   * @param cv_img_in 
+   * @param cv_img_out 
+   */
+  void Apply(cv::Mat& cv_img_in, cv::Mat& cv_img_out);
 };
 
 #endif

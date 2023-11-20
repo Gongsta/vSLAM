@@ -80,7 +80,7 @@ ORBFeatureDetector::~ORBFeatureDetector() {
   vpiPayloadDestroy(orb_payload);
 }
 
-void ORBFeatureDetector::ProcessFrame(cv::Mat& cv_img_in, cv::Mat& cv_img_out) {
+void ORBFeatureDetector::Apply(cv::Mat& cv_img_in, cv::Mat& cv_img_out) {
   CHECK_STATUS(vpiImageCreateWrapperOpenCVMat(cv_img_in, 0, &img_in));
 
   // ================

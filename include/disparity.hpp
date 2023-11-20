@@ -15,33 +15,23 @@
 #include <sstream>
 #include <vpi/OpenCVInterop.hpp>
 
+#include "stereodisparityparams.hpp"
 #include "vpi_utils.hpp"
 
 class DisparityEstimator {
   // Disparity is optimized to run on multiple backends
  public:
-  VPIStream& stream;
-
   // VPI
-  VPIImage in_left = NULL;
-  VPIImage in_right = NULL;
-  VPIImage tmp_left = NULL;
-  VPIImage tmp_right = NULL;
-  VPIImage stereo_left = NULL;
-  VPIImage stereo_right = NULL;
   VPIImage disparity = NULL;
   VPIImage confidence_map = NULL;
   VPIPayload stereo = NULL;
 
-  VPIConvertImageFormatParams conv_params;
-  VPIStereoDisparityEstimatorCreationParams stereo_params;
+  StereoDisparityParams params;
 
-  uint64_t backends;
-
-  DisparityEstimator(cv::Mat& cv_img_in, VPIStream& stream, uint64_t backends = VPI_BACKEND_CUDA);
+  DisparityEstimator(StereoDisparityParams params);
   ~DisparityEstimator();
-  void ProcessFrame(cv::Mat& cv_img_left, cv::Mat& cv_img_right, cv::Mat& cv_disparity_color,
-                    cv::Mat& cv_confidence);
+  void Apply(VPIStream& stream, VPIImage& stereo_left, VPIImage& stereo_right,
+             cv::Mat& cv_disparity_color, cv::Mat& cv_confidence);
 };
 
 #endif
