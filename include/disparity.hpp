@@ -8,6 +8,7 @@
 #include <vpi/algo/Rescale.h>
 #include <vpi/algo/StereoDisparity.h>
 
+#include <utility>
 #include <cstring>  // for memset
 #include <iostream>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -30,7 +31,7 @@ class DisparityEstimator {
 
   DisparityEstimator(StereoDisparityParams params);
   ~DisparityEstimator();
-  void Apply(VPIStream& stream, VPIImage& stereo_left, VPIImage& stereo_right,
+  std::pair<VPIImage&, VPIImage&> Apply(VPIStream& stream, VPIImage& stereo_left, VPIImage& stereo_right,
              cv::Mat& cv_disparity_color, cv::Mat& cv_confidence);
 };
 

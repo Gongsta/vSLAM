@@ -1,11 +1,16 @@
 
+#include "cuda_processing.hpp"
 
-// TODO: Make fx,fy shared variables
+namespace cuda {
+    void ComputeDisparityToDepth() {}
+
+namespace {
 __global__
-void ComputeDisparityToDepth(float* disparity_map ,float* depth_map, int width, int height, float fx, float baseline) {
+void ComputeDisparityToDepthCUDA(float* disparity_map ,float* depth_map, int width, int height, float fx, float baseline) {
+// TODO: Make fx,fy shared variables
   int col = blockDim.x * blockIdx.x + threadIdx.x;
   int row = blockDim.y * blockIdx.y + threadIdx.y;
-  if ( col < width && row < height) {
+  if (col < width && row < height) {
       // get 1D coordinate for the grayscale image
       int idx = row * width + col;
 
@@ -14,7 +19,7 @@ void ComputeDisparityToDepth(float* disparity_map ,float* depth_map, int width, 
 }
 
 __global__
-void ComputeDepthToPointcloud(float* depth_map, float* pointcloud_map, int width, int height, float fx, float fy, float cx, float cy) {
+void ComputeDepthToPointcloudCUDA(float* depth_map, float* pointcloud_map, int width, int height, float fx, float fy, float cx, float cy) {
     int col = blockDim.x * blockIdx.x + threadIdx.x;
     int row = blockDim.y * blockIdx.y + threadIdx.y;
 
@@ -37,10 +42,5 @@ void ComputeDepthToPointcloud(float* depth_map, float* pointcloud_map, int width
         pointcloud_map[cloud_idx + 2] = z;
     }
 }
-
-int main() {
-  
- 
-
-
+}
 }

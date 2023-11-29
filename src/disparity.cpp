@@ -77,6 +77,8 @@ void DisparityEstimator::Apply(VPIStream& stream, VPIImage& stereo_left,
     cv::cvtColor(cv_mask, cv_mask, cv::COLOR_GRAY2BGR);
     cv::bitwise_and(cv_disparity_color, cv_mask, cv_disparity_color);
   }
+
+  return std::pair<VPIImage&, VPIImage&>(disparity, confidence_map);
 }
 
 DisparityEstimator::~DisparityEstimator() {

@@ -42,9 +42,15 @@ int main() {
                                         VPI_IMAGE_FORMAT_Y16_ER, VPI_BACKEND_CUDA};
     ImageFormatConverter right_converter{img_width, img_height, params.conv_params,
                                          VPI_IMAGE_FORMAT_Y16_ER, VPI_BACKEND_CUDA};
-    ImageResizer left_resizer{params.input_width, params.input_height, params.stereo_format, VPI_BACKEND_VIC};
-    ImageResizer right_resizer{params.input_width, params.input_height, params.stereo_format, VPI_BACKEND_VIC};
+    ImageResizer left_resizer{params.input_width, params.input_height, params.stereo_format,
+                              VPI_BACKEND_VIC};
+    ImageResizer right_resizer{params.input_width, params.input_height, params.stereo_format,
+                               VPI_BACKEND_VIC};
     DisparityEstimator disparity{params};
+    DisparityToDepthConverter disparity_to_depth{params.output_width, params.output_height,
+                                                 params.disparity_format};
+
+    DepthToPointcloudConverter depth_to_pointcloud{params.output_width, params.output_height};
 
     // Get Images
     VPIImage left_img_raw;
@@ -63,17 +69,26 @@ int main() {
 
       // VPIImage& right_img_rect = right_rectifier.Apply(right_stream, right_img_raw);
       VPIImage& right_img_rect_gray = right_converter.Apply(left_stream, right_img_raw);
-      VPIImage& right_img_rect_gray_resize = right_resizer.Apply(left_stream,
-      right_img_rect_gray);
+      VPIImage& right_img_rect_gray_resize = right_resizer.Apply(left_stream, right_img_rect_gray);
 
       // // Sync left and right stream
       // CHECK_STATUS(vpiStreamSync(left_stream));
       // CHECK_STATUS(vpiStreamSync(right_stream));
 
-      disparity.Apply(left_stream, left_img_rect_gray_resize, right_img_rect_gray_resize, cv_disparity_color,
-                      cv_confidence);
+      std::pair<VPIImage&, VPIImage&> disparity_output =
+          disparity.Apply(left_stream, left_img_rect_gray_resize, right_img_rect_gray_resize,
+                          cv_disparity_color, cv_confidence);
+      VPIImage& disparity_map = disparity_output.first;
+      VPIImage& confidence_map = disparity_output.second;
 
-      imshow("disparity", cv_disparity_color);
+      CUDAImage depth_map = disparity_to_depth.Apply(left_stream, disparity_map);
+
+
+      Pointcloud& depth_to_pointcloud.Apply(depth_map);
+
+      disparity.disparity
+
+          imshow("disparity", cv_disparity_color);
       // imshow("confidence", cv_confidence);
       vpiImageDestroy(left_img_raw);
       vpiImageDestroy(right_img_raw);
