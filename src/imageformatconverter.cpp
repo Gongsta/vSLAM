@@ -10,7 +10,7 @@ ImageFormatConverter::ImageFormatConverter(int out_width, int out_height,
 
 ImageFormatConverter::~ImageFormatConverter() { vpiImageDestroy(img_out); }
 
-VPIImage& ImageFormatConverter::Apply(VPIStream& stream, VPIImage img_in) {
+VPIImage& ImageFormatConverter::Apply(VPIStream& stream, VPIImage& img_in) {
   CHECK_STATUS(vpiSubmitConvertImageFormat(stream, backends, img_in, img_out, &conv_params));
   return img_out;
 }

@@ -1,4 +1,5 @@
 #include <vpi/CUDAInterop.h>
+#include <vpi/Stream.h>
 
 #include "cudaimage.hpp"
 #include "depthtopointcloud.hpp"
@@ -7,23 +8,16 @@
 #include "imageformatconverter.hpp"
 #include "imageresizer.hpp"
 #include "stereodisparityparams.hpp"
-#include <chrono>
-#include <thread>
+#include "vpi_utils.hpp"
 
 int main() {
   int retval = 0;
-  cv::VideoCapture cap(0, cv::CAP_V4L2);
-  cv::Mat raw_stereo_img;
-
-  cap.read(raw_stereo_img);
-  cv::imwrite("small_stereo.jpeg", raw_stereo_img);
-
-
+  cv::Mat raw_stereo_img = cv::imread("../small_stereo.jpeg");
   int raw_stereo_width = raw_stereo_img.cols;
   int raw_stereo_height = raw_stereo_img.rows;
+
   std::cout << "raw_stereo_width: " << raw_stereo_width
             << " raw_stereo_height: " << raw_stereo_height << std::endl;
-
   cv::Rect left_img_index = cv::Rect(0, 0, raw_stereo_width / 2, raw_stereo_height);
   cv::Rect right_img_index =
       cv::Rect(raw_stereo_width / 2, 0, raw_stereo_width / 2, raw_stereo_height);
@@ -38,9 +32,6 @@ int main() {
 
   // uint64_t backends = VPI_BACKEND_OFA | VPI_BACKEND_PVA | VPI_BACKEND_VIC;
   uint64_t backends = VPI_BACKEND_CUDA;
-
-  VPIImage left_img_raw;
-  VPIImage right_img_raw;
 
   cudaStream_t left_stream_cuda;
   cudaStream_t right_stream_cuda;
@@ -70,9 +61,12 @@ int main() {
     ImageResizer right_resizer{params.input_width, params.input_height, params.stereo_format,
                                VPI_BACKEND_VIC};
     DisparityEstimator disparity{params};
+
+
     ImageFormatConverter disparity_converter{params.output_width, params.output_height,
                                              params.conv_params, VPI_IMAGE_FORMAT_F32,
                                              VPI_BACKEND_CUDA};
+
     DisparityToDepthConverter disparity_to_depth{params.output_width, params.output_height,
                                                  VPI_IMAGE_FORMAT_F32};
 
@@ -80,11 +74,14 @@ int main() {
 
     while (true) {
       // Get Images
-      cap.read(raw_stereo_img);
+      VPIImage left_img_raw;
+      VPIImage right_img_raw;
       cv_img_left = raw_stereo_img(left_img_index);
       cv_img_right = raw_stereo_img(right_img_index);
       CHECK_STATUS(vpiImageCreateWrapperOpenCVMat(cv_img_left, 0, &left_img_raw));
       CHECK_STATUS(vpiImageCreateWrapperOpenCVMat(cv_img_right, 0, &right_img_raw));
+
+      std::cout << "wrapper completed" << std::endl;
 
       // VPIImage& left_img_rect = left_rectifier.Apply(left_stream, left_img_raw);
       VPIImage& left_img_rect_gray = left_converter.Apply(left_stream, left_img_raw);
@@ -107,12 +104,20 @@ int main() {
       // CHECK_STATUS(vpiStreamSync(right_stream));
 
       VPIImage& depth_map = disparity_to_depth.Apply(left_stream_cuda, disparity_map_f32, cv_depth);
-      cv::imshow("disparity", cv_depth);
+      
+      cv::imwrite("depth.png", cv_depth);
+
+      // Pointcloud & depth_to_pointcloud.Apply(left_stream,depth_map);
+
+      // disparity.disparity
+
+      // imshow("disparity", cv_disparity_color);
+      // imwrite("disparity.png", cv_disparity_color);
       // imshow("confidence", cv_confidence);
       vpiImageDestroy(left_img_raw);
       vpiImageDestroy(right_img_raw);
-      
-      // std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+      std::cout << "loop completed" << std::endl;
 
       if (cv::waitKey(5) >= 0) {
         break;

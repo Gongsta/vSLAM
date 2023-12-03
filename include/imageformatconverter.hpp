@@ -29,7 +29,7 @@ class ImageFormatConverter {
   ImageFormatConverter(int out_width, int out_height, VPIConvertImageFormatParams conv_params,
                        VPIImageFormat image_format, uint64_t backends = VPI_BACKEND_CUDA);
   ~ImageFormatConverter();
-  VPIImage& Apply(VPIStream& stream, VPIImage img_in);
+  VPIImage& Apply(VPIStream& stream, VPIImage& img_in);
 };
 
 #endif

@@ -13,6 +13,7 @@
       vpiGetLastStatusMessage(buffer, sizeof(buffer));  \
       std::ostringstream ss;                            \
       ss << vpiStatusGetName(status) << ": " << buffer; \
+      ss << " at " << __FILE__ << ":" << __LINE__;      \
       throw std::runtime_error(ss.str());               \
     }                                                   \
   } while (0);

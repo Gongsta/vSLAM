@@ -1,6 +1,7 @@
 #ifndef DISPARITYTODEPTH_HPP_
 #define DISPARITYTODEPTH_HPP_
 
+#include <cuda_runtime.h>
 #include <vpi/Image.h>
 #include <vpi/Status.h>
 #include <vpi/Stream.h>
@@ -18,15 +19,6 @@
 #include "cudaimage.hpp"
 #include "vpi_utils.hpp"
 
-struct Image {
-  CUDAImage image;
-  Image(int height, int height, VPIImageFormat format) {
-    CudaMalloc2D();
-    VPICreateImageWrapper(image)
-  }
-
-}
-
 class DisparityToDepthConverter {
   // Disparity is optimized to run on multiple backends
  public:
@@ -35,7 +27,8 @@ class DisparityToDepthConverter {
 
   DisparityToDepthConverter(int width, int height, VPIImageFormat format);
   ~DisparityToDepthConverter();
-  CUDAImage& Apply(VPIStream& stream, VPIImage& disparity_map);
+  void ComputeDepth(cudaStream_t& stream, VPIImage& disparity_map);
+  VPIImage& Apply(cudaStream_t& stream, VPIImage& disparity_map, cv::Mat& cv_depth_map);
 };
 
 #endif

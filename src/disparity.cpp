@@ -24,7 +24,7 @@ DisparityEstimator::DisparityEstimator(StereoDisparityParams params): params{par
   }
 }
 
-void DisparityEstimator::Apply(VPIStream& stream, VPIImage& stereo_left,
+std::pair<VPIImage&, VPIImage&> DisparityEstimator::Apply(VPIStream& stream, VPIImage& stereo_left,
                                     VPIImage& stereo_right, cv::Mat& cv_disparity_color,
                                     cv::Mat& cv_confidence) {
   // Stereo Left and stereo right should be already in the correct format

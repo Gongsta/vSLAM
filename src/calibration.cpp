@@ -17,7 +17,7 @@ Calibration::Calibration(std::string source_path_or_camera_id, CalibrationSettin
     cameraID = input[0] - '0';
     video_input_type = VideoInputType::CAMERA;
   } else {
-    if (input.ends_with(".mp4") || input.ends_with(".avi")) {
+    if ((input.substr(input.length() - 4, 4) == ".mp4" || input.substr(input.length() -4, 4) == ".avi")) {
       video_input_type = VideoInputType::VIDEO_FILE;
     } else {
       video_input_type = VideoInputType::IMAGE_FOLDER;

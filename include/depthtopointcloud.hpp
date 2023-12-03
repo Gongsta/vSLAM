@@ -8,6 +8,7 @@
 #include <vpi/algo/Rescale.h>
 #include <vpi/algo/StereoDisparity.h>
 
+#include <Eigen/Core>
 #include <cstring>  // for memset
 #include <iostream>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -19,10 +20,9 @@
 
 class DepthToPointCloudConverter {
  public:
-  DepthToPointCloudConverter(StereoDisparityParams params);
+  DepthToPointCloudConverter(int height, int width);
   ~DepthToPointCloudConverter();
-   Apply(VPIStream& stream, float* depth_map,
-             );
+  Eigen::Vector3f* Apply(VPIStream& stream, float* depth_map);
 };
 
 #endif
