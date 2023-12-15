@@ -7,6 +7,10 @@ Getting started.
 The code is make use of all of the NVIDIA hardware (VIC, CUDA, PVA, CPU). Some older hardware might not have access
 to VIC or PVA, so you can just use the CUDA backend.
 
+Prereqs for Pangolin
+```
+sudo apt-get install libglew-dev
+```
 
 Visual Odometry Pipeline
 
