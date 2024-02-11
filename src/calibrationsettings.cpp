@@ -1,6 +1,5 @@
 #include "calibrationsettings.hpp"
 
-
 void CalibrationSettings::read(const cv::FileNode& node) {
   node["board_size_width"] >> board_size.width;
   node["board_size_height"] >> board_size.height;

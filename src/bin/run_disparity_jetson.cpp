@@ -7,8 +7,6 @@
 #include "imageformatconverter.hpp"
 #include "imageresizer.hpp"
 #include "stereodisparityparams.hpp"
-#include <chrono>
-#include <thread>
 
 int main() {
   int retval = 0;
@@ -111,8 +109,6 @@ int main() {
       // imshow("confidence", cv_confidence);
       vpiImageDestroy(left_img_raw);
       vpiImageDestroy(right_img_raw);
-      
-      // std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
       if (cv::waitKey(5) >= 0) {
         break;

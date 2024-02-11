@@ -1,6 +1,6 @@
 #include "disparity.hpp"
 
-DisparityEstimator::DisparityEstimator(StereoDisparityParams params): params{params} {
+DisparityEstimator::DisparityEstimator(StereoDisparityParams params) : params{params} {
   // =================================
   // Allocate all VPI resources needed
   // Override some backend-dependent parameters, see
@@ -9,9 +9,9 @@ DisparityEstimator::DisparityEstimator(StereoDisparityParams params): params{par
   // Create the payload for Stereo Disparity algorithm.
   // Payload is created before the image objects so that non-supported backends can be trapped
   // with an error.
-  CHECK_STATUS(vpiCreateStereoDisparityEstimator(params.backends, params.input_width, params.input_height,
-                                                 params.stereo_format, &params.stereo_params,
-                                                 &stereo));
+  CHECK_STATUS(vpiCreateStereoDisparityEstimator(params.backends, params.input_width,
+                                                 params.input_height, params.stereo_format,
+                                                 &params.stereo_params, &stereo));
 
   // Create the image where the disparity map will be stored.
   CHECK_STATUS(vpiImageCreate(params.output_width, params.output_height, params.disparity_format, 0,
@@ -19,14 +19,15 @@ DisparityEstimator::DisparityEstimator(StereoDisparityParams params): params{par
 
   // Create the confidence image if the backend can support it
   if (params.use_confidence_map) {
-    CHECK_STATUS(
-        vpiImageCreate(params.output_width, params.output_height, VPI_IMAGE_FORMAT_U16, 0, &confidence_map));
+    CHECK_STATUS(vpiImageCreate(params.output_width, params.output_height, VPI_IMAGE_FORMAT_U16, 0,
+                                &confidence_map));
   }
 }
 
 std::pair<VPIImage&, VPIImage&> DisparityEstimator::Apply(VPIStream& stream, VPIImage& stereo_left,
-                                    VPIImage& stereo_right, cv::Mat& cv_disparity_color,
-                                    cv::Mat& cv_confidence) {
+                                                          VPIImage& stereo_right,
+                                                          cv::Mat& cv_disparity_color,
+                                                          cv::Mat& cv_confidence) {
   // Stereo Left and stereo right should be already in the correct format
   CHECK_STATUS(vpiSubmitStereoDisparityEstimator(stream, params.backends, stereo, stereo_left,
                                                  stereo_right, disparity, confidence_map, NULL));
@@ -48,7 +49,8 @@ std::pair<VPIImage&, VPIImage&> DisparityEstimator::Apply(VPIStream& stream, VPI
   // Scale result and write it to disk. Disparities are in Q10.5 format,
   // so to map it to float, it gets divided by 32. Then the resulting disparity range,
   // from 0 to stereo.maxDisparity gets mapped to 0-255 for proper output.
-  cv_disparity.convertTo(cv_disparity, CV_8UC1, 255.0 / (32 * params.stereo_params.maxDisparity), 0);
+  cv_disparity.convertTo(cv_disparity, CV_8UC1, 255.0 / (32 * params.stereo_params.maxDisparity),
+                         0);
 
   // Apply TURBO colormap to turn the disparities into color, reddish hues
   // represent objects closer to the camera, blueish are farther away.

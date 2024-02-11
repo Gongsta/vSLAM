@@ -62,13 +62,13 @@ int main() {
                                VPI_BACKEND_VIC};
     DisparityEstimator disparity{params};
 
-
     ImageFormatConverter disparity_converter{params.output_width, params.output_height,
                                              params.conv_params, VPI_IMAGE_FORMAT_F32,
                                              VPI_BACKEND_CUDA};
 
-    DisparityToDepthConverter disparity_to_depth{params.output_width, params.output_height,
-                                                 VPI_IMAGE_FORMAT_F32};
+    DisparityToDepthConverter disparity_to_depth{
+        params.output_width, params.output_height, 300, 0.05,
+        VPI_IMAGE_FORMAT_F32};  // Mock baseline and fx values
 
     DepthToPointCloudConverter depth_to_pointcloud{params.output_width, params.output_height};
 
@@ -104,7 +104,7 @@ int main() {
       // CHECK_STATUS(vpiStreamSync(right_stream));
 
       VPIImage& depth_map = disparity_to_depth.Apply(left_stream_cuda, disparity_map_f32, cv_depth);
-      
+
       cv::imwrite("depth.png", cv_depth);
 
       // Pointcloud & depth_to_pointcloud.Apply(left_stream,depth_map);

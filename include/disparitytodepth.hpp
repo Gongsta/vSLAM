@@ -24,8 +24,10 @@ class DisparityToDepthConverter {
  public:
   // VPI
   VPIImage depth_map;
+  float baseline;
+  float fx;
 
-  DisparityToDepthConverter(int width, int height, VPIImageFormat format);
+  DisparityToDepthConverter(int width, int height, float fx, float baseline, VPIImageFormat format);
   ~DisparityToDepthConverter();
   void ComputeDepth(cudaStream_t& stream, VPIImage& disparity_map);
   VPIImage& Apply(cudaStream_t& stream, VPIImage& disparity_map, cv::Mat& cv_depth_map);
