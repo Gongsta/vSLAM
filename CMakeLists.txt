@@ -44,11 +44,27 @@ include_directories(${VPI_INCLUDE_DIRS})
 find_package(Pangolin REQUIRED)
 include_directories(${Pangolin_INCLUDE_DIRS})
 
+# TO REMOVE IF NOT USING ZED
+find_package(ZED 3 REQUIRED)
+include_directories(${ZED_INCLUDE_DIRS})
+link_directories(${ZED_LIBRARY_DIR})
+link_directories(${CUDA_LIBRARY_DIRS})
+option(LINK_SHARED_ZED "Link with the ZED SDK shared executable" ON)
+if (LINK_SHARED_ZED)
+    SET(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY})
+else()
+    SET(ZED_LIBS ${ZED_STATIC_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_LIBRARY})
+endif()
+
+
+
+
 # /include folder
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/include/cuda)
 
 add_library(${PROJECT_NAME} SHARED
+    src/bfmatcher.cpp
     src/cuda/processing.cu
     src/calibration.cpp
     src/calibrationsettings.cpp
@@ -63,24 +79,31 @@ add_library(${PROJECT_NAME} SHARED
     src/imagerectifier.cpp
     src/imageresizer.cpp
     src/orb.cpp
+    src/save_depth.cpp
     src/stereodisparityparams.cpp
+    src/zed_utils.cpp
 )
 
 add_executable(main src/bin/main.cpp)
 add_executable(sanity_check_camera src/bin/sanity_check_camera.cpp)
 add_executable(orb src/bin/run_orb.cpp)
-add_executable(disparity_jetson src/bin/run_disparity_jetson.cpp)
+add_executable(disparity_jetson src/bin/run_disparity_jetson_zed.cpp)
 add_executable(disparity_image src/bin/run_disparity_image.cpp)
 add_executable(run_calibration src/bin/run_calibration.cpp)
 add_executable(view_calibration src/bin/view_calibration.cpp)
 add_executable(trajectory_viz src/bin/plottrajectory.cpp)
 add_executable(pointcloud src/bin/plotpointcloud.cpp)
 add_executable(vpi_demo src/bin/vpi_demo.cpp)
+add_executable(zed_main src/bin/zed_main.cpp)
+add_executable(zed_main_threading src/bin/zed_main_threading.cpp)
+add_executable(calculator src/bin/calculator.cpp)
 # add_executable(benchmark_test benchmarking/corner_benchmark.cpp)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
+
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} vpi ${Pangolin_LIBRARIES} ${CUDA_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${ZED_LIBS})
 target_link_libraries(main ${PROJECT_NAME})
 target_link_libraries(trajectory_viz ${PROJECT_NAME})
 target_link_libraries(pointcloud ${PROJECT_NAME})
@@ -91,6 +114,9 @@ target_link_libraries(disparity_image ${PROJECT_NAME})
 target_link_libraries(sanity_check_camera ${PROJECT_NAME})
 target_link_libraries(run_calibration ${PROJECT_NAME})
 target_link_libraries(view_calibration ${PROJECT_NAME})
+target_link_libraries(zed_main ${PROJECT_NAME})
+target_link_libraries(zed_main_threading ${PROJECT_NAME})
+target_link_libraries(calculator ${PROJECT_NAME})
 # target_link_libraries(benchmark_test ${PROJECT_NAME})
 # target_link_libraries(benchmark_test benchmark::benchmark)
 

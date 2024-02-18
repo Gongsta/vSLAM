@@ -24,8 +24,8 @@ class DisparityToDepthConverter {
  public:
   // VPI
   VPIImage depth_map;
-  float baseline;
   float fx;
+  float baseline;
 
   DisparityToDepthConverter(int width, int height, float fx, float baseline, VPIImageFormat format);
   ~DisparityToDepthConverter();

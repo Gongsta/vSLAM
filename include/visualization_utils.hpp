@@ -4,7 +4,6 @@
 #include <iostream>
 #include <vector>
 
-
 void DrawPointcloud(std::vector<Eigen::Vector3d>& pointcloud, float point_size = 3.0) {
   glPointSize(point_size);
   glBegin(GL_POINTS);
@@ -15,8 +14,7 @@ void DrawPointcloud(std::vector<Eigen::Vector3d>& pointcloud, float point_size =
   glEnd();
 }
 
-void DrawTrajectory(
-    std::vector<Eigen::Isometry3d>& poses) {
+void DrawTrajectory(std::vector<Eigen::Isometry3d>& poses) {
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
   glLineWidth(2);
 

@@ -8,14 +8,16 @@
 #include <vpi/algo/Rescale.h>
 #include <vpi/algo/StereoDisparity.h>
 
-#include <utility>
 #include <cstring>  // for memset
 #include <iostream>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 #include <sstream>
+#include <utility>
 #include <vpi/OpenCVInterop.hpp>
 
+#include "imageformatconverter.hpp"
+#include "imageresizer.hpp"
 #include "stereodisparityparams.hpp"
 #include "vpi_utils.hpp"
 
@@ -29,10 +31,24 @@ class DisparityEstimator {
 
   StereoDisparityParams params;
 
-  DisparityEstimator(StereoDisparityParams params);
+  ImageFormatConverter* left_converter = nullptr;
+  ImageFormatConverter* right_converter = nullptr;
+  ImageResizer* left_resizer = nullptr;
+  ImageResizer* right_resizer = nullptr;
+
+  // Whether to threshold the disparity
+  bool threshold = false;
+
+  DisparityEstimator(StereoDisparityParams params, bool threshold = false);
   ~DisparityEstimator();
-  std::pair<VPIImage&, VPIImage&> Apply(VPIStream& stream, VPIImage& stereo_left, VPIImage& stereo_right,
-             cv::Mat& cv_disparity_color, cv::Mat& cv_confidence);
+  // Feed in preprocesssed VPIImage (grayscale and resized)
+  std::pair<VPIImage&, VPIImage&> Apply(VPIStream& stream, VPIImage& left_img_rect_gray_resize,
+                                        VPIImage& right_img_rect_gray_resize,
+                                        cv::Mat& cv_disparity_color, cv::Mat& cv_confidence);
+  // Feed in a cv::Mat. Will convert to VPIImage and apply preprocessing (grayscale and resize)
+  std::pair<VPIImage&, VPIImage&> Apply(VPIStream& stream, cv::Mat& cv_img_left,
+                                        cv::Mat& cv_img_right, cv::Mat& cv_disparity_color,
+                                        cv::Mat& cv_confidence);
 };
 
 #endif

@@ -4,6 +4,9 @@ StereoDisparityParams::StereoDisparityParams(const uint64_t backends) : backends
   CHECK_STATUS(vpiInitConvertImageFormatParams(&conv_params));
   CHECK_STATUS(vpiInitStereoDisparityEstimatorCreationParams(&stereo_params));
 
+  stereo_params.maxDisparity = 256;  // Default of 64 gives bad results
+  stereo_params.includeDiagonals = 0;
+
   switch (backends) {
     case VPI_BACKEND_CUDA:
       use_confidence_map = true;

@@ -7,19 +7,25 @@ __global__ void ComputeDisparityToDepthCUDA(float* disparity_map, float* depth_m
   int row = blockDim.y * blockIdx.y + threadIdx.y;
   if (col < width && row < height) {
     int idx = row * width + col;
-    depth_map[idx] = fx * baseline / disparity_map[idx];
+    if (disparity_map[idx] == 0.0f) {
+      depth_map[idx] = 0.0f;
+    } else {
+      depth_map[idx] = fx * baseline / disparity_map[idx];
+      depth_map[idx] = min(10.0f, depth_map[idx]);
+      depth_map[idx] = max(0.0f, depth_map[idx]);
+    }
   }
 }
 
-// __global__ void ComputeDepthToPointcloudCUDA(float* depth_map, Eigen::Vector3f* pointcloud_map, int width, int height, float fx, float fy, float cx, float cy) {
+// __global__ void ComputeDepthToPointcloudCUDA(float* depth_map, Eigen::Vector3f* pointcloud_map,
+// int width, int height, float fx, float fy, float cx, float cy) {
 //   int col = blockDim.x * blockIdx.x + threadIdx.x;
 //   int row = blockDim.y * blockIdx.y + threadIdx.y;
-  
+
 //   int idx = row * kernel_width + col;
 //   if (idx < size) {
-//     pointcloud_map[idx] = 
+//     pointcloud_map[idx] =
 //   }
-
 
 //   if (col < width && row < height) {
 //     // Calculate the index in the 1D depth map

@@ -2,9 +2,9 @@
  * @file orb.hpp
  * @author Steven Gong (gong.steven@hotmail.com)
  * @brief ORB Feature Detector class
- * 
+ *
  * @copyright MIT License (c) 2023 Steven Gong
- * 
+ *
  */
 #ifndef ORB_HPP_
 #define ORB_HPP_
@@ -39,25 +39,33 @@ class ORBFeatureDetector {
   VPIImage img_in = NULL;
   VPIImage img_gray = NULL;
   VPIPyramid pyr_input = NULL;
-  VPIArray keypoints = NULL; 
+  VPIArray keypoints = NULL;
   VPIArray descriptors = NULL;
   VPIPayload orb_payload = NULL;
+  VPIArrayData out_keypoints_data;
+  VPIArrayData out_descriptors_data;
 
   // ORB Params
   VPIORBParams orb_params;
   int32_t pyramid_levels;
   float pyramid_scales;
+  int out_capacity;
+  int buf_capacity;
 
   ORBFeatureDetector(cv::Mat& cv_img_in, VPIStream& stream, uint64_t backends);
   ~ORBFeatureDetector();
   /**
-   * @brief Takes in two regular images and outputs the keypoints and descriptors. Good for quick demo
-   * purposes, but not for actual use.
-   * 
-   * @param cv_img_in 
-   * @param cv_img_out 
+   * @brief Takes in two regular images and outputs the keypoints and descriptors. Good for quick
+   * demo purposes, but not for actual use.
+   *
+   * @param cv_img_in
+   * @param cv_img_out
    */
-  void Apply(cv::Mat& cv_img_in, cv::Mat& cv_img_out);
+
+  std::pair<VPIArray&, VPIArray&> Apply(cv::Mat& cv_img_in, cv::Mat& cv_img_out);
+  std::pair<VPIArray&, VPIArray&> Apply(cv::Mat& cv_img_in, std::vector<cv::KeyPoint>& cvkeypoints);
+  std::pair<VPIArray&, VPIArray&> Apply(cv::Mat& cv_img_in, cv::Mat& cv_img_out,
+                                        std::vector<cv::KeyPoint>& cvkeypoints);
 };
 
 #endif

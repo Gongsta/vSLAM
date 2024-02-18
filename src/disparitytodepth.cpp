@@ -15,7 +15,7 @@ void DisparityToDepthConverter::ComputeDepth(cudaStream_t& stream, VPIImage& dis
   CUDAImage<float> cuda_depth_map{depth_map};
 
   ComputeDisparityToDepth(stream, cuda_disparity_map.data, cuda_depth_map.data,
-                          cuda_disparity_map.width, cuda_disparity_map.height, 1.0, 0.1);
+                          cuda_disparity_map.width, cuda_disparity_map.height, fx, baseline);
 }
 
 VPIImage& DisparityToDepthConverter::Apply(cudaStream_t& stream, VPIImage& disparity_map,
@@ -31,11 +31,19 @@ VPIImage& DisparityToDepthConverter::Apply(cudaStream_t& stream, VPIImage& dispa
   CHECK_STATUS(vpiImageDataExportOpenCVMat(data, &cv_depth));
 
   // Scale result
-  cv_depth.convertTo(cv_depth, CV_8UC1, 255.0, 0);
+  double min;
+  double max;
+  cv::minMaxIdx(cv_depth, &min, &max);
+  cv::convertScaleAbs(cv_depth, cv_depth_map, 255.0 / max);
+
+  // // depth.convertTo(cv_depth, CV_8UC1, 255.0 / (10.0), 0);
+  // cv_depth.convertTo(cv_depth, CV_8UC1, 10.0, 0);
+  // cv_depth_map = cv_depth;
 
   // Apply TURBO colormap to turn the disparities into color, reddish hues
   // represent objects closer to the camera, blueish are farther away.
-  cv::applyColorMap(cv_depth, cv_depth_map, cv::COLORMAP_TURBO);
+  // cv::applyColorMap(cv_depth, cv_depth_map, cv::COLORMAP_TURBO);
+  // cv::applyColorMap(cv_depth, cv_depth_map, cv::COLORMAP_BONE);
 
   // Done handling output, don't forget to unlock it.
   CHECK_STATUS(vpiImageUnlock(depth_map));

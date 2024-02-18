@@ -1,6 +1,7 @@
 #include "disparity.hpp"
 
-DisparityEstimator::DisparityEstimator(StereoDisparityParams params) : params{params} {
+DisparityEstimator::DisparityEstimator(StereoDisparityParams params, bool threshold)
+    : params{params}, threshold{threshold} {
   // =================================
   // Allocate all VPI resources needed
   // Override some backend-dependent parameters, see
@@ -24,13 +25,26 @@ DisparityEstimator::DisparityEstimator(StereoDisparityParams params) : params{pa
   }
 }
 
-std::pair<VPIImage&, VPIImage&> DisparityEstimator::Apply(VPIStream& stream, VPIImage& stereo_left,
-                                                          VPIImage& stereo_right,
+DisparityEstimator::~DisparityEstimator() {
+  delete left_converter;
+  delete right_converter;
+  delete left_resizer;
+  delete right_resizer;
+  // stream should be destroyed first in case images are still being used
+  vpiImageDestroy(confidence_map);
+  vpiImageDestroy(disparity);
+  vpiPayloadDestroy(stereo);
+}
+
+std::pair<VPIImage&, VPIImage&> DisparityEstimator::Apply(VPIStream& stream,
+                                                          VPIImage& left_img_rect_gray_resize,
+                                                          VPIImage& right_img_rect_gray_resize,
                                                           cv::Mat& cv_disparity_color,
                                                           cv::Mat& cv_confidence) {
   // Stereo Left and stereo right should be already in the correct format
-  CHECK_STATUS(vpiSubmitStereoDisparityEstimator(stream, params.backends, stereo, stereo_left,
-                                                 stereo_right, disparity, confidence_map, NULL));
+  CHECK_STATUS(vpiSubmitStereoDisparityEstimator(
+      stream, params.backends, stereo, left_img_rect_gray_resize, right_img_rect_gray_resize,
+      disparity, confidence_map, NULL));
 
   // Wait until the algorithm finishes processing
   CHECK_STATUS(vpiStreamSync(stream));
@@ -66,26 +80,67 @@ std::pair<VPIImage&, VPIImage&> DisparityEstimator::Apply(VPIStream& stream, VPI
 
     CHECK_STATUS(vpiImageDataExportOpenCVMat(data, &cv_confidence));
 
-    // Confidence map varies from 0 to 65535, we scale it to
-    // [0-255].
+    // Confidence map varies from 0 to 65535, we scale it to [0-255].
     cv_confidence.convertTo(cv_confidence, CV_8UC1, 255.0 / 65535, 0);
 
     CHECK_STATUS(vpiImageUnlock(confidence_map));
 
-    // When pixel confidence is 0, its color in the disparity
-    // output is black.
-    cv::Mat cv_mask;
-    cv::threshold(cv_confidence, cv_mask, 1, 255, cv::THRESH_BINARY);
-    cv::cvtColor(cv_mask, cv_mask, cv::COLOR_GRAY2BGR);
-    cv::bitwise_and(cv_disparity_color, cv_mask, cv_disparity_color);
+    if (threshold) {
+      // When pixel confidence is 0, its color in the disparity output is black.
+      cv::Mat cv_mask;
+      cv::threshold(cv_confidence, cv_mask, 1, 255, cv::THRESH_BINARY);
+      cv::cvtColor(cv_mask, cv_mask, cv::COLOR_GRAY2BGR);
+      cv::bitwise_and(cv_disparity_color, cv_mask, cv_disparity_color);
+    }
   }
 
   return std::pair<VPIImage&, VPIImage&>(disparity, confidence_map);
 }
 
-DisparityEstimator::~DisparityEstimator() {
-  // stream should be destroyed first in case images are still being used
-  vpiImageDestroy(confidence_map);
-  vpiImageDestroy(disparity);
-  vpiPayloadDestroy(stereo);
+// Overload function for simpler implementation
+std::pair<VPIImage&, VPIImage&> DisparityEstimator::Apply(VPIStream& stream, cv::Mat& cv_img_left,
+                                                          cv::Mat& cv_img_right,
+                                                          cv::Mat& cv_disparity_color,
+                                                          cv::Mat& cv_confidence) {
+  // Stereo Left and stereo right should be already in the correct format
+  VPIImage left_img_rect;
+  VPIImage right_img_rect;
+  CHECK_STATUS(vpiImageCreateWrapperOpenCVMat(cv_img_left, 0, &left_img_rect));
+  CHECK_STATUS(vpiImageCreateWrapperOpenCVMat(cv_img_right, 0, &right_img_rect));
+
+  if (left_converter == nullptr) {
+    left_converter =
+        new ImageFormatConverter{cv_img_left.cols, cv_img_left.rows, params.conv_params,
+                                 VPI_IMAGE_FORMAT_Y16_ER, VPI_BACKEND_CUDA};
+  }
+  if (right_converter == nullptr) {
+    right_converter =
+        new ImageFormatConverter{cv_img_right.cols, cv_img_right.rows, params.conv_params,
+                                 VPI_IMAGE_FORMAT_Y16_ER, VPI_BACKEND_CUDA};
+  }
+  if (left_resizer == nullptr) {
+    // left_resizer = new ImageResizer{params.input_width, params.input_height,
+    // params.stereo_format,
+    //                                 VPI_BACKEND_VIC};
+    left_resizer = new ImageResizer{params.input_width, params.input_height, params.stereo_format,
+                                    VPI_BACKEND_CUDA};
+  }
+  if (right_resizer == nullptr) {
+    right_resizer = new ImageResizer{params.input_width, params.input_height, params.stereo_format,
+                                     VPI_BACKEND_CUDA};
+  }
+
+  VPIImage& left_img_rect_gray = left_converter->Apply(stream, left_img_rect);
+  VPIImage& left_img_rect_gray_resize = left_resizer->Apply(stream, left_img_rect_gray);
+  VPIImage& right_img_rect_gray = right_converter->Apply(stream, right_img_rect);
+  VPIImage& right_img_rect_gray_resize = right_resizer->Apply(stream, right_img_rect_gray);
+
+  std::pair<VPIImage&, VPIImage&> disparity_output =
+      this->Apply(stream, left_img_rect_gray_resize, right_img_rect_gray_resize, cv_disparity_color,
+                  cv_confidence);
+
+  CHECK_STATUS(vpiStreamSync(stream));
+  vpiImageDestroy(left_img_rect);
+  vpiImageDestroy(right_img_rect);
+  return disparity_output;
 }
