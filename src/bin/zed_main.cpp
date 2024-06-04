@@ -24,6 +24,7 @@
 #include "zed_utils.hpp"
 
 std::atomic<bool> running(true);
+std::atomic<bool> visualize(true);
 
 // VPI/CUDA
 uint64_t backends = VPI_BACKEND_CUDA;
@@ -127,7 +128,9 @@ int main() {
       zed.retrieveImage(zed_stereo_img, sl::VIEW::SIDE_BY_SIDE, sl::MEM::CPU);
       cv_stereo_img =
           sl::slMat2cvMat(zed_stereo_img).clone();  // Ensure deep copy for safe threading
-      cv::imshow("Image", cv_stereo_img);
+      if (visualize) {
+        cv::imshow("Image", cv_stereo_img);
+      }
 
       /*-----------DISPARITY--------------*/
       cv::Mat cv_img_left = cv_stereo_img(left_img_index);
@@ -143,8 +146,10 @@ int main() {
 
       cv_depth_queue.push_back(cv_depth);
 
-      cv::imshow("Disparity", cv_disparity_color);
-      cv::imshow("depth", cv_depth);
+      if (visualize) {
+        cv::imshow("Disparity", cv_disparity_color);
+        cv::imshow("depth", cv_depth);
+      }
 
       /*-----------ORB--------------*/
       cv::Mat cv_img_out;
@@ -168,7 +173,9 @@ int main() {
         VPIArray& descriptors_t = orb_results_t.second;
         bfmatcher.Apply(descriptors_t, cv_img_t, cvkeypoints_t, descriptors_t_1, cv_img_t_1,
                         cvkeypoints_t_1, cv_img_out, cvMatches);
-        cv::imshow("ORB", cv_img_out);
+        if (visualize) {
+          cv::imshow("ORB", cv_img_out);
+        }
 
         /*-----------Visual Odometry Solver--------------*/
         Eigen::MatrixXd F1, F2;  // 2D points
@@ -209,8 +216,10 @@ int main() {
       auto latency = std::chrono::duration_cast<std::chrono::milliseconds>(curr - start).count();
       std::cout << "Frequency: " << 1000.0 / latency << " Hz" << std::endl;
       start = curr;
-      if (cv::waitKey(1) == 'q') {
-        running = false;
+      if (visualize) {
+        if (cv::waitKey(1) == 'q') {
+          running = false;
+        }
       }
     }
   }

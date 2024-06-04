@@ -93,9 +93,9 @@ ORBFeatureDetector::ORBFeatureDetector(cv::Mat& cv_img_in, VPIStream& stream, ui
 
   // Configure ORB parameters
   CHECK_STATUS(vpiInitORBParams(&orb_params));
-  orb_params.fastParams.intensityThreshold = 100;
-  orb_params.maxFeaturesPerLevel = 1000;
-  orb_params.maxPyramidLevels = 4;
+  orb_params.fastParams.intensityThreshold = 142;
+  orb_params.maxFeaturesPerLevel = 88;
+  orb_params.maxPyramidLevels = 3;
 
   // For the output arrays capacity we can use the maximum number of features per level multiplied
   // by the maximum number of pyramid levels, this will be the de factor maximum for all levels of

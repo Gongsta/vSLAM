@@ -42,6 +42,7 @@ std::deque<cv::Mat> cv_depth_queue;
 // std::deque<std::vector<cv::Keypoint>> cv_depth_queue;
 
 std::atomic<bool> running(true);
+std::atomic<bool> visualize(true);
 std::condition_variable queueCondVar;
 std::condition_variable solverCondVar;
 
@@ -122,7 +123,9 @@ void ORBThreadFunction(ORBFeatureDetector& orb_t_1, ORBFeatureDetector& orb_t,
           std::chrono::duration_cast<std::chrono::milliseconds>(curr - orb_start).count();
       std::cout << "ORB Frequency: " << 1000.0 / latency << " Hz" << std::endl;
       orb_start = curr;
-      cv::imshow("ORB", cv_img_out);
+      if (visualize) {
+        cv::imshow("ORB", cv_img_out);
+      }
     }
     if (cv::waitKey(1) == 'q') {
       running = false;
@@ -204,8 +207,10 @@ void DisparityThreadFunction(DisparityEstimator& disparity_estimator,
     auto latency =
         std::chrono::duration_cast<std::chrono::milliseconds>(curr - disparity_start).count();
     std::cout << "Disparity Frequency: " << 1000.0 / latency << " Hz" << std::endl;
-    cv::imshow("Disparity", cv_disparity_color);
-    cv::imshow("depth", cv_depth);
+    if (visualize) {
+      cv::imshow("Disparity", cv_disparity_color);
+      cv::imshow("depth", cv_depth);
+    }
     disparity_start = curr;
     if (cv::waitKey(1) == 'q') {
       running = false;
@@ -234,7 +239,9 @@ void displayThreadFunction() {
         std::chrono::duration_cast<std::chrono::milliseconds>(curr - display_start).count();
     std::cout << "Frequency: " << 1000.0 / latency << " Hz" << std::endl;
     std::cout << "Zed Frequency: " << zed.getCurrentFPS() << std::endl;
-    cv::imshow("Image", imgToDisplay);
+    if (visualize) {
+      cv::imshow("Image", imgToDisplay);
+    }
     display_start = curr;
     if (cv::waitKey(1) == 'q') {
       running = false;

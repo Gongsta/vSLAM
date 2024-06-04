@@ -10,9 +10,9 @@ static std::vector<cv::DMatch> ConvertMatches(VPIMatches* outMatches,
     if (outMatches[i].refIndex[0] == -1) {  // Match not found
       continue;
     }
-    if (outMatches[i].distance[0] > 20) {  // Distance threshold
-      continue;
-    }
+    // if (outMatches[i].distance[0] > 20) {  // Distance threshold
+    //   continue;
+    // }
     cvMatches.push_back(cv::DMatch(outMatches[i].refIndex[0], i, outMatches[i].distance[0]));
   }
   return cvMatches;
